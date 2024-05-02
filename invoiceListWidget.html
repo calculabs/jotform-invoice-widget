@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dynamic Invoice List Widget</title>
+    <link rel="stylesheet" href="https://code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
+    <script src="https://js.jotform.com/JotFormCustomWidget.min.js"></script>
+</head>
+<style>
+    #dataTable input, #dataTable select {
+        width: 100%;
+        box-sizing: border-box;
+        padding: 8px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        transition: border-color 0.3s;
+    }
+
+    #dataTable input:focus, #dataTable select:focus {
+        border-color: #0056b3;
+        outline: none;
+    }
+
+    button.rowButton{
+    cursor: pointer;
+    background: black;
+    border: none;
+    border-radius: 5px;
+    padding: 10px 15px;
+    color: white;
+    transition: background 0.3s;
+    }
+
+    button.addRow:hover {
+        background: #0056b3;
+    }
+
+    button.removeRow:hover {
+        background: rgb(155, 11, 11);
+    }
+    
+input::placeholder {
+    overflow: visible;
+    color: rgb(199, 199, 199);
+}
+
+    #widgetContainer {
+        margin: 20px;
+        padding: 20px;
+        border-radius: 5px;
+    }
+    .controls {
+    margin-top: -30px;
+}
+</style>
+<body>
+    <div id="widgetContainer">
+        <table id="dataTable">
+            <thead>
+                <tr>
+                    <th style="width: 100px;">Service Code</th>
+                    <th style="width: 100px;">Date</th>
+                    <th style="width: 350px;">Task</th>
+                    <th style="width: 100px;">Quantity</th>
+                    <th style="width: 100px;">Unit</th>
+                    <th style="width: 100px;">Rate</th>
+                    <th style="width: 100px;">Cost</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Rows will be added here dynamically -->
+            </tbody>
+            <tfoot>
+                <tr>
+                    <td colspan="6" style="text-align: right;">Grand Total:</td>
+                    <td><input type="text" id="grandTotal" readonly style="width: 100%; box-sizing: border-box;"></td>
+                </tr>
+            </tfoot>
+        </table>
+        <div class="controls">
+        <div class="buttonRow"style="padding-top:10px">
+        <button class="rowButton addRow" onclick="addRow()">Add Row</button>
+      </div>
+    </div>
+</body>
+</html>
+
+<script>
+    function addRow() {
+        const table = document.getElementById("dataTable").getElementsByTagName('tbody')[0];
+        const newRow = table.insertRow(table.rows.length);
+    
+        newRow.innerHTML = `
+            <td><input placeholder="Service Code" type="number" name="serviceCode[]" style="width: 100%; box-sizing: border-box;"></td>
+            <td><input placeholder="Date" type="text" name="date[]" class="datepicker" style="width: 100%; box-sizing: border-box;"></td>
+            <td><input placeholder="Task" type="text" name="task[]" style="width: 100%; box-sizing: border-box;"></td>
+            <td><input placeholder="Quantity" type="number" name="timeByTask[]" oninput="calculateCost(this)" style="width: 100%; box-sizing: border-box;"></td>
+            <td>
+                <select name="unitOfMeasurement[]" style="width: 100%; box-sizing: border-box;">
+                    <option value="minute">Minutes</option>
+                    <option value="hour">Hours</option>
+                    <option value="day">Days</option>
+                    <option value="task">Tasks</option>
+                </select>
+            </td>
+            <td><input placeholder="Rate" type="number" name="rate[]" oninput="calculateCost(this)" style="width: 100%; box-sizing: border-box;"></td>
+            <td><input placeholder="Cost" type="text" name="cost[]" readonly style="width: 100%; box-sizing: border-box;"></td>
+            <td><button onclick="removeRow(this)">X</button></td>
+        `;
+    
+        $(".datepicker").datepicker(); // Initialize datepicker for new date inputs
+        updateGrandTotal(); // Update grand total when a new row is added
+    }
+    
+    function removeRow(button) {
+        const row = button.parentNode.parentNode;
+        const rowIndex = row.rowIndex - 1; // Adjust for zero-based index (header is not counted in rowIndex)
+    
+        if (rowIndex === 0) {
+            alert("You cannot delete the first row.");
+        } else {
+            row.parentNode.removeChild(row);
+            updateGrandTotal(); // Update grand total after a row is removed
+        }
+    }
+    
+    function calculateCost(element) {
+        const row = element.parentNode.parentNode;
+        const timeByTaskInput = row.cells[3].getElementsByTagName('input')[0];
+        const rateInput = row.cells[5].getElementsByTagName('input')[0];
+        const costInput = row.cells[6].getElementsByTagName('input')[0];
+    
+        const timeByTask = parseFloat(timeByTaskInput.value);
+        const rate = parseFloat(rateInput.value);
+    
+        if (!isNaN(timeByTask) && !isNaN(rate)) {
+            const totalCost = timeByTask * rate;
+            const formatter = new Intl.NumberFormat('en-US', {
+                style: 'currency',
+                currency: 'USD',
+                minimumFractionDigits: 2
+            });
+            costInput.value = formatter.format(totalCost);
+        } else {
+            costInput.value = '$0.00';
+        }
+        updateGrandTotal(); // Update grand total whenever any cost is calculated
+    }
+
+    function updateGrandTotal() {
+    const costs = document.querySelectorAll('input[name="cost[]"]');
+    let grandTotal = 0;
+    costs.forEach(cost => {
+        const value = parseFloat(cost.value.replace(/[^0-9.-]+/g,"")); // Remove currency formatting
+        if (!isNaN(value)) {
+            grandTotal += value;
+        }
+    });
+
+    const grandTotalInput = document.getElementById("grandTotal");
+    const formatter = new Intl.NumberFormat('en-US', {
+        style: 'currency',
+        currency: 'USD',
+        minimumFractionDigits: 2
+    });
+    grandTotalInput.value = formatter.format(grandTotal);
+}
+    
+    $(document).ready(function() {
+        $(".datepicker").datepicker();
+        addRow(); // Add initial empty row
+    });
+
+
+    JFCustomWidget.subscribe("ready", function() {
+            // The widget is ready, you can perform any necessary initializations here
+            addRow(); // Add initial empty row
+        });
+
+        JFCustomWidget.subscribe("submit", function() {
+            const rows = document.querySelectorAll("#dataTable tbody tr");
+            const data = [];
+
+            rows.forEach(row => {
+                const serviceCode = row.cells[0].getElementsByTagName('input')[0].value;
+                const date = row.cells[1].getElementsByTagName('input')[0].value;
+                const task = row.cells[2].getElementsByTagName('input')[0].value;
+                const quantity = row.cells[3].getElementsByTagName('input')[0].value;
+                const unit = row.cells[4].getElementsByTagName('select')[0].value;
+                const rate = row.cells[5].getElementsByTagName('input')[0].value;
+                const cost = row.cells[6].getElementsByTagName('input')[0].value;
+
+                data.push({
+                    serviceCode: serviceCode,
+                    date: date,
+                    task: task,
+                    quantity: quantity,
+                    unit: unit,
+                    rate: rate,
+                    cost: cost
+                });
+            });
+
+            JFCustomWidget.sendData(data);
+        });
+    </script>
