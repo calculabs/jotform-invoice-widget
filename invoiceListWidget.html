@@ -90,7 +90,7 @@
         <script>
             JFCustomWidget.subscribe("ready", function () {
                 function updateIframeHeight() {
-                    var newHeight = document.getElementById('widgetContainer').scrollHeight + 50; // Corrected to 'widgetContainer'
+                    var newHeight = document.getElementById('widgetContainer').scrollHeight + 50;
                     JFCustomWidget.requestFrameResize({
                         height: newHeight
                     });
@@ -208,39 +208,46 @@
                 const addRowButton = document.querySelector('.addRow');
                 addRowButton.addEventListener('click', addRow);
 
-
-
                 JFCustomWidget.subscribe("submit", function () {
                     const rows = document.querySelectorAll("#dataTable tbody tr");
-                    let items = [];
+                    let items = [];  // This will be the array of row objects
 
                     rows.forEach((row, index) => {
                         let itemData = {
-                            itemNumber: index + 1 // Continue to add the row number, starting at 1
+                            ServiceCode: row.querySelector("input[name='serviceCode']").value,
+                            InvoiceDate: row.querySelector("input[name='invoiceDate']").value,
+                            TaskDescription: row.querySelector("input[name='taskDescription']").value,
+                            Hours: row.querySelector("input[name='timeByTask']").value,
+                            Unit: row.querySelector("select[name='unitOfMeasurement']").value,
+                            Rate: row.querySelector("input[name='rate']").value,
+                            Cost: row.querySelector("input[name='cost']").value
                         };
-                        const inputs = row.querySelectorAll("input, select");
 
-                        inputs.forEach(input => {
-                            itemData[input.name] = input.value;
-                        });
-
-                        items.push(itemData); // Push each item's data into the items array
+                        items.push(itemData);
                     });
 
-                    // Include grandTotal in the submission data
+                    // Add grand total as a separate row
                     const grandTotalValue = document.getElementById("grandTotal").value;
-                    const submissionData = {
-                        items: items, // Changed key from rows to items
-                        grandTotal: grandTotalValue
+                    let grandTotalRow = {
+                        ServiceCode: "",
+                        InvoiceDate: "",
+                        TaskDescription: "",
+                        Hours: "",
+                        Unit: "",
+                        Rate: "Grand Total:",
+                        Cost: grandTotalValue
                     };
+                    items.push(grandTotalRow);  // Append the grand total row to the items array
 
+                    // Directly send the array of objects
                     const msg = {
                         valid: true,
-                        value: JSON.stringify(submissionData, null, 2)
+                        value: JSON.stringify(items)
                     };
 
                     JFCustomWidget.sendSubmit(msg);
                 });
+
             });
 
         </script>
