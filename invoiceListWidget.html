@@ -91,6 +91,7 @@
             JFCustomWidget.subscribe("ready", function () {
                 function updateIframeHeight() {
                     var newHeight = document.getElementById('widgetContainer').scrollHeight + 50;
+                    newHeight = Math.max(newHeight, 290);
                     JFCustomWidget.requestFrameResize({
                         height: newHeight
                     });
